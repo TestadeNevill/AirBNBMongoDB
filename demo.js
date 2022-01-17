@@ -9,11 +9,7 @@ async function main() {
     try {
         await client.connect();
 
-        await findLisitngsWithMinimumBedroomsAndMostRecentReviews(client, {
-            minimumNumberOfBedrooms: 4,
-            minimumNumberOfBathooms: 2,
-            maximumNumberOfResults: 5
-        });
+        await updateAllListingsToHavePropertyType(client);
 
     } catch (e) {
         console.error(e);
@@ -23,6 +19,33 @@ async function main() {
 }
 
 main().catch(console.error);
+
+async function updateAllListingsToHavePropertyType(client) {
+    const result = await client.db("sample_airbnb").collection("listingsAndReviews").updateMany({ property_type: { $exists: false } }, { $set: { property_type: "Unknown" } });
+
+    console.log(`${result.matchedCount} document(s) matched the query criteria.`);
+
+    console.log(`${result.modifiedCount} document(s) was/were updated.`);
+}
+
+async function upsertListingByName(client, nameOfLisiting, updatedListing) {
+    const result = await client.db("sample_airbnb").collection("listingsAndReviews").updateOne({ name: nameOfLisiting }, { $set: updatedListing }, { upsert: true });
+
+    console.log(` ${result.matchedCount} document(s) matched the query criteria`);
+
+    if (result.upsertedCount > 0) {
+        console.log(`One document was inserted with the id ${result.upsertedId}`);
+    } else {
+        console.log(`${result.modifiedCount} document(s) was/were updated`)
+    }
+}
+
+async function updateListingsByName(client, nameOfLisiting, updatedListing) {
+    const result = await client.db("sample_airbnb").collection("listingsAndReviews").updateOne({ name: nameOfLisiting }, { $set: updatedListing })
+
+    console.log(`${result.matchedCount} document(s) matched query criteria`)
+    console.log(`${result.modifiedCount} document(s) was/were updated`)
+}
 
 async function findLisitngsWithMinimumBedroomsAndMostRecentReviews(client, {
     minimumNumberOfBedrooms = 0,
